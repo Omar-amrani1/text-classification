@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from xgboost import XGBClassifier
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
-
+from sklearn.naive_bayes import MultinomialNB
 # Download stopwords
 nltk.download('stopwords')
 from nltk.corpus import stopwords
@@ -68,10 +68,10 @@ def boost_performance_keywords(text):
 # 3. Train on a Single Dataset Over 10 Runs ##########
 
 # Choose the project (options: 'caffe', 'incubator-mxnet', 'keras', 'pytorch', 'tensorflow')
-project = 'tensorflow'  # Change this to switch datasets
+project = 'pytorch'  # Change this to switch datasets
 path = f'datasets/{project}.csv'
 REPEAT = 10
-
+MODEL_NAME = 'xgboost' #options: 'xgboost', 'naive_bayes'
 if not os.path.exists(path):
     raise FileNotFoundError(f"Dataset not found at {path}")
 
@@ -110,7 +110,8 @@ le = LabelEncoder()
 data['sentiment'] = le.fit_transform(data['sentiment'])
 
 # 3) Output CSV file name
-out_csv_name = f'./output/{project}_NB.csv'
+model_tag = 'XGB' if MODEL_NAME == 'xgboost' else 'NB'
+out_csv_name = f'./output/{project}_{model_tag}.csv'
 
 # Store metrics across 10 runs
 accuracies, precisions, recalls, f1_scores, auc_values = [], [], [], [], []
@@ -127,16 +128,21 @@ for repeated_time in range(REPEAT):
     y_train = data['sentiment'].iloc[train_index]
     y_test  = data['sentiment'].iloc[test_index]
 
-    # Model training
-    # 1. Add class weighting to balance the classes
-    clf = XGBClassifier(
-        learning_rate=0.1, 
-        max_depth=3, 
-        n_estimators=100,
-        scale_pos_weight=5,  # Give more weight to positive class
-        eval_metric='logloss',
-        random_state=42
-    )
+   # Model training
+    if MODEL_NAME == 'xgboost':
+        clf = XGBClassifier(
+            learning_rate=0.1,
+            max_depth=3,
+            n_estimators=100,
+            scale_pos_weight=5,
+            eval_metric='logloss',
+            random_state=42
+        )
+    elif MODEL_NAME == 'naive_bayes':
+        clf = MultinomialNB()
+    else:
+        raise ValueError("MODEL_NAME must be either 'xgboost' or 'naive_bayes'")
+
     clf.fit(X_train, y_train)
 
     # Predictions and metrics
@@ -168,7 +174,8 @@ avg_f1 = np.mean(f1_scores)
 avg_auc = np.mean(auc_values)
 
 # Print results
-print(f"\n=== XGBoost + TF-IDF Results on {project} Dataset ===")
+display_name = "XGBoost" if MODEL_NAME == 'xgboost' else "Naive Bayes"
+print(f"\n=== {display_name} + TF-IDF Results on {project} Dataset ===")
 print(f"Number of repeats:     {REPEAT}")
 print(f"Average Accuracy:      {avg_accuracy:.4f}")
 print(f"Average Precision:     {avg_precision:.4f}")
@@ -206,3 +213,5 @@ print(f"\nResults have also been saved to: {out_csv_name}")
 import joblib
 # joblib.dump(clf, 'xgboost_bug_report_model.pkl')
 # joblib.dump(tfidf, 'tfidf_vectorizer.pkl')
+# joblib.dump(tfidf, 'tfidf_vectorizer.pkl')
+
