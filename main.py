@@ -204,5 +204,5 @@ print(f"\nResults have also been saved to: {out_csv_name}")
 # Save artifacts 
 #Uncomment this if you want to use the classifier later ( for example build a GUI)
 import joblib
-joblib.dump(clf, 'xgboost_bug_report_model.pkl')
-joblib.dump(tfidf, 'tfidf_vectorizer.pkl')
+# joblib.dump(clf, 'xgboost_bug_report_model.pkl')
+# joblib.dump(tfidf, 'tfidf_vectorizer.pkl')
